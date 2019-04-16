@@ -1,114 +1,147 @@
 from collections import deque, namedtuple
 
 
-# we'll use infinity as a default distance to verticess.
 inf = float('inf')
-aresta = namedtuple('aresta', 'ini, fim, custo')
+aresta = namedtuple('aresta', 'ini, fim, custo') # aresta eh formada por uma dupla contendo o valor da aresta e uma tripla com as ligacoes da aresta e o seu valor
 
-
-def make_aresta(ini, fim, custo=1):
+# metodo de construcao da aresta
+def make_aresta(ini, fim, custo=1): # aresta eh iniciada com valor 1 representando o infinito
   return aresta(ini, fim, custo)
 
-
-class Graph:
+# classe do grafo
+class Grafo:
+    # metodo de verificacao se o grafo eh valido
     def __init__(grafo, arestas):
-        # let's check that the data is right
-        wrong_arestas = [i for i in arestas if len(i) not in [2, 3]]
-        if wrong_arestas:
-            raise ValueError('Wrong arestas data: {}'.format(wrong_arestas))
+        noArestas = [i for i in arestas if len(i) not in [2, 3]]
+        if noArestas:
+            raise ValueError('Informacoes invalidas: {}'.format(noArestas))
 
         grafo.arestas = [make_aresta(*aresta) for aresta in arestas]
 
+    # metodo construtor dos vertices
     @property
     def vertices(grafo):
-        return set(
-            sum(
-                ([aresta.ini, aresta.fim] for aresta in grafo.arestas), []
-            )
-        )
+        return set(sum(([aresta.ini, aresta.fim] for aresta in grafo.arestas), []))
 
-    def get_vertices_pairs(grafo, n1, n2, both_fins=True):
-        if both_fins:
-            vertices_pairs = [[n1, n2], [n2, n1]]
+    # metodo 'get' dos pares de vertices
+    def get_pares(grafo, n1, n2, fins=True):
+        if fins:
+            parVertices = [[n1, n2], [n2, n1]]
         else:
-            vertices_pairs = [[n1, n2]]
-        return vertices_pairs
+            parVertices = [[n1, n2]]
+        return parVertices
 
-    def remove_aresta(grafo, n1, n2, both_fins=True):
-        vertices_pairs = grafo.get_vertices_pairs(n1, n2, both_fins)
+    def remove_aresta(grafo, n1, n2, fins=True):
+        parVertices = grafo.get_pares(n1, n2, fins)
         arestas = grafo.arestas[:]
         for aresta in arestas:
-            if [aresta.ini, aresta.fim] in vertices_pairs:
+            if [aresta.ini, aresta.fim] in parVertices:
                 grafo.arestas.remove(aresta)
 
-    def add_aresta(grafo, n1, n2, custo=1, both_fins=True):
-        vertices_pairs = grafo.get_vertices_pairs(n1, n2, both_fins)
+    def add_aresta(grafo, n1, n2, custo=1, fins=True):
+        parVertices = grafo.get_pares(n1, n2, fins)
         for aresta in grafo.arestas:
-            if [aresta.ini, aresta.fim] in vertices_pairs:
-                return ValueError('aresta {} {} already exists'.format(n1, n2))
+            if [aresta.ini, aresta.fim] in parVertices:
+                return ValueError('Aresta {} {} ja existe'.format(n1, n2))
 
         grafo.arestas.append(aresta(ini=n1, fim=n2, custo=custo))
-        if both_fins:
+        if fins:
             grafo.arestas.append(aresta(ini=n2, fim=n1, custo=custo))
 
     @property
-    def neighbours(grafo):
-        neighbours = {vertex: set() for vertex in grafo.vertices}
+    def vizinhos(grafo):
+        vizinhos = {vert: set() for vert in grafo.vertices}
         for aresta in grafo.arestas:
-            neighbours[aresta.ini].add((aresta.fim, aresta.custo))
+            vizinhos[aresta.ini].add((aresta.fim, aresta.custo))
 
-        return neighbours
+        return vizinhos
 
     def dijkstra(grafo, origem, alvo):
-        assert origem in grafo.vertices, 'Such origem vertices doesn\'t exist'
-        distances = {vertex: inf for vertex in grafo.vertices}
-        previous_vertices = {
-            vertex: None for vertex in grafo.vertices
-        }
-        distances[origem] = 0
+        custoTotal = 0
+        dist = {vert: inf for vert in grafo.vertices}
+        preVertices = {vert: None for vert in grafo.vertices}
+        dist[origem] = 0
         vertices = grafo.vertices.copy()
 
         while vertices:
-            current_vertex = min(
-                vertices, key=lambda vertex: distances[vertex])
-            vertices.remove(current_vertex)
-            if distances[current_vertex] == inf:
+            atualVertice = min(vertices, key=lambda vert: dist[vert])
+            vertices.remove(atualVertice)
+
+            if dist[atualVertice] == inf:
                 break
-            for neighbour, custo in grafo.neighbours[current_vertex]:
-                alternative_route = distances[current_vertex] + custo
-                if alternative_route < distances[neighbour]:
-                    distances[neighbour] = alternative_route
-                    previous_vertices[neighbour] = current_vertex
 
-        path, current_vertex = deque(), alvo
-        while previous_vertices[current_vertex] is not None:
-            path.appendleft(current_vertex)
-            current_vertex = previous_vertices[current_vertex]
-        if path:
-            path.appendleft(current_vertex)
-        return path
+            for vizinho, custo in grafo.vizinhos[atualVertice]:
+                alt = dist[atualVertice] + custo
+                if alt < dist[vizinho]:
+                    dist[vizinho] = alt
+                    preVertices[vizinho] = atualVertice
 
-    def guloso():
-        return
+        caminho, atualVertice = deque(), alvo
+        while preVertices[atualVertice] is not None:
+            caminho.appendleft(atualVertice)
+            atualVertice = preVertices[atualVertice]
+            custoTotal = custoTotal + custo
+        if caminho:
+            caminho.appendleft(atualVertice)
 
-graph = Graph([
+        caminho.appendleft(custoTotal)
+        return caminho
+
+    def guloso(grafo, origem, alvo, tipoBusca):
+        custoTotal = 0
+        dist = {vert: inf for vert in grafo.vertices}
+        preVertices = {vert: None for vert in grafo.vertices}
+        dist[origem] = 0
+        vertices = grafo.vertices.copy()
+
+        while vertices:
+            atualVertice = min(vertices, key=lambda vert: dist[vert])
+            vertices.remove(atualVertice)
+
+            if dist[atualVertice] == inf:
+                break
+
+            for vizinho, custo in grafo.vizinhos[atualVertice]:
+                alt = dist[atualVertice] + custo
+                if alt < dist[vizinho]:
+                    dist[vizinho] = alt
+                    preVertices[vizinho] = atualVertice
+
+        caminho, atualVertice = deque(), alvo
+        while preVertices[atualVertice] is not None:
+            caminho.appendleft(atualVertice)
+            atualVertice = preVertices[atualVertice]
+            custoTotal = custoTotal + custo
+        if caminho:
+            caminho.appendleft(atualVertice)
+
+        caminho.appendleft(custoTotal)
+        return caminho
+g = Grafo([
     ("a", "b", 7),  ("a", "c", 9),  ("a", "f", 14), ("b", "c", 10),
     ("b", "d", 14), ("c", "d", 11), ("c", "f", 2),  ("d", "e", 6),
     ("e", "f", 9)])
 
-op = 1
+op = 1 # variavel de opcoes iniciada para while valido
 
+# menu do programa
 while op:
     op = input('\n(1) Procura por Dijkstra\n(2) Procura por Guloso\n\n(0) Sair\n\n-> ')
     print('\n')
 
+    # switch menu
     if op == 0:
         print('Saindo do Programa...\n')
     else:
         if op == 1:
-            print( graph.dijkstra("c", "e"))
+            ori = raw_input('Vertice origem: ')
+            des = raw_input('Vertice destino: ')
+            print( g.dijkstra(ori, des))
         else:
             if op == 2:
-                print('guloso\n')
+                ori = raw_input('Vertice origem: ')
+                des = raw_input('Vertice destino: ')
+                tBusca = input('Busca por:\n          (1) Maior valor\n          (2) Menor valor\n-> ')
+                print( g.guloso(ori, des, tBusca))
             else:
-                op = 1
+                op = 3
