@@ -91,33 +91,29 @@ class Grafo:
 
         return caminho
 
-    def guloso(grafo, origem, alvo, tipoBusca):
+    def guloso(grafo, origem, alvo):
+        # inicio: custo total e valor do destino sao zerados e arranjo de destino e vertices anteriores sao criados
         custoTotal = 0
         dist = {vert: inf for vert in grafo.vertices}
         preVertices = {vert: None for vert in grafo.vertices}
         dist[origem] = 0
         vertices = grafo.vertices.copy()
 
-        while vertices:
-            atualVertice = min(vertices, key=lambda vert: dist[vert])
-            vertices.remove(atualVertice)
+        while vertices:  # percorre por todos vertices
+            atualVertice = min(vertices, key=lambda vert: dist[vert])   # vertice sendo analizado
+            vertices.remove(atualVertice)   # vertice analizado eh fechado
 
-            if dist[atualVertice] == inf:
+            if dist[atualVertice] == inf:   # se o vertice atual for o alvo, acaba o laco
                 break
 
             alt = 0
-            for vizinho, custo in grafo.vizinhos[atualVertice]:
-                if tipoBusca == 1:
-                    if alt > custo:
-                        dist[vizinho] = alt
-                        preVertices[vizinho] = atualVertice
+            for vizinho, custo in grafo.vizinhos[atualVertice]: # atualizando os valores dos custos e o verice a ser analizado
+                if alt < custo:
+                    dist[vizinho] = alt
+                    preVertices[vizinho] = atualVertice
 
-                else:
-                    if alt < custo:
-                        dist[vizinho] = alt
-                        preVertices[vizinho] = atualVertice
-
-        caminho, atualVertice = deque(), alvo
+        caminho, atualVertice = deque(), alvo   # arranjo de saida e vertice a ser analizado eh o ultimo
+        # o arranjo de entrada sera completado
         while preVertices[atualVertice] is not None:
             caminho.appendleft(atualVertice)
             atualVertice = preVertices[atualVertice]
@@ -138,23 +134,23 @@ g = Grafo([
 op = 1 # variavel de opcoes iniciada para while valido
 
 # menu do programa
-while op:
+while op != "0":
     op = input('\n(1) Procura por Dijkstra\n(2) Procura por Guloso\n\n(0) Sair\n\n-> ')
     print('\n')
 
     # switch menu
-    if op == 0:
+    if op == "0":
         print('Saindo do Programa...\n')
     else:
-        if op == 1:
-            ori = raw_input('Vertice origem: ')
-            des = raw_input('Vertice destino: ')
+        if op == "1":
+            ori = input('Vertice origem: ')
+            des = input('Vertice destino: ')
             print( g.dijkstra(ori, des))
         else:
-            if op == 2:
-                ori = raw_input('Vertice origem: ')
-                des = raw_input('Vertice destino: ')
-                tBusca = input('Busca por:\n          (1) Maior valor\n          (2) Menor valor\n-> ')
-                print( g.guloso(ori, des, tBusca))
+            if op == "2":
+                ori = input('Vertice origem: ')
+                des = input('Vertice destino: ')
+                print( g.guloso(ori, des))
+
             else:
-                op = 3
+                print('Comando invalido!\n')
